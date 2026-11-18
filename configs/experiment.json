@@ -1,0 +1,21 @@
+{
+  "experiment_id": "temporal_shift_2024_v1",
+  "random_seed": 42,
+  "data_source": {
+    "description": "Public monthly taxi trip records",
+    "source_page": "https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page",
+    "year": 2024
+  },
+  "target": {
+    "name": "duration_minutes",
+    "minimum_minutes": 1,
+    "maximum_minutes": 180
+  },
+  "model_features": ["pickup_zone", "pickup_hour", "pickup_weekday", "pickup_month"],
+  "splits": [
+    {"name": "train", "start": "2024-01-01T00:00:00", "end": "2024-07-01T00:00:00"},
+    {"name": "validation", "start": "2024-07-01T00:00:00", "end": "2024-09-01T00:00:00"},
+    {"name": "calibration", "start": "2024-09-01T00:00:00", "end": "2024-10-01T00:00:00"},
+    {"name": "test", "start": "2024-10-01T00:00:00", "end": "2025-01-01T00:00:00"}
+  ]
+}
