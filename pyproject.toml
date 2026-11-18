@@ -4,12 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shiftforgeml"
-version = "0.2.0"
+version = "0.3.0"
 description = "Reproducible temporal machine learning and distribution shift experiments"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "polars>=1.30,<3",
+    "numpy>=1.26,<3",
+    "scikit-learn>=1.6,<2",
+    "joblib>=1.4,<2",
 ]
 
 [project.optional-dependencies]

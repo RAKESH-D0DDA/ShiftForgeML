@@ -1,44 +1,38 @@
 # ShiftForgeML
 
-ShiftForgeML is an independent experimental framework for temporal machine learning, distribution shift detection, uncertainty quantification and adaptive retraining. The first benchmark uses publicly available taxi trip records to evaluate general ML reliability under changing data distributions.
+ShiftForgeML is an independent framework for temporal machine learning, distribution shift detection, uncertainty quantification and adaptive retraining. Its initial benchmark uses publicly available monthly taxi trip records. The purpose of the project is to evaluate predictive systems under changes in data distribution, not to develop a domain-specific application.
 
-## Implementation status
+## Current implementation
 
-**Milestone 1: complete.** Temporal evaluation contracts, feature restrictions and label-availability tests.
+- **Milestone 1 complete:** temporal data contracts, feature-availability rules and label-cutoff tests.
+- **Milestone 2 complete:** Polars-based Parquet ingestion, deterministic sampling, provenance manifests and record-level quality accounting.
+- **Milestone 3 implemented, pending independent end-to-end verification:** supervised regression baselines, training-only preprocessing, manifest-verified temporal model selection and validation artifacts.
+- **Planned:** drift detection, conformal uncertainty estimation, adaptive retraining and expanded experiment tracking.
 
-**Milestone 2: implemented for local verification.** Lazy Parquet ingestion, deterministic sampling, leakage-aware feature extraction, row-level rejection accounting, cryptographic provenance manifests and synthetic integration tests.
+## Environment
 
-**Not yet implemented:** fitted regression models, optimization, drift detectors, conformal prediction, adaptive retraining and experiment tracking.
-
-## Requirements
-
-Python 3.11 or newer.
+Python 3.11 or newer. Create a local virtual environment and install dependencies:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
 python -m pip install -e '.[dev]'
 python -m pytest -q
 ```
 
-## Quick start: public benchmark data
+## Data preparation
 
-The official source provides the 2024 yellow taxi trip records in monthly Parquet format:
+The benchmark consists of public 2024 yellow taxi trip files published at:
 https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
 
-Download the January partition from its public source:
+Raw files are not distributed with this repository. Download the monthly Parquet files separately and prepare them using a common sampling rate:
 
 ```bash
 mkdir -p data/raw
 curl --fail --location --retry 3 \
   'https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet' \
   --output data/raw/yellow_tripdata_2024-01.parquet
-```
 
-Prepare a deterministic 10% sample:
-
-```bash
 shiftforge prepare \
   --config configs/experiment.json \
   --input data/raw/yellow_tripdata_2024-01.parquet \
@@ -46,17 +40,27 @@ shiftforge prepare \
   --sample-bps 1000
 ```
 
-Output files:
+All eight monthly partitions from January through August are required before running the supervised experiment. The ingestion step produces `data/processed/curated/YYYY-MM.parquet` and `data/processed/manifests/YYYY-MM.json`.
 
-- `data/processed/curated/2024-01.parquet`: cleaned features, target and split assignment
-- `data/processed/manifests/2024-01.json`: input and output checksums, processing parameters and rejection counts
+## Model comparison
 
-`--sample-bps 10000` retains all accepted rows. A repeated identical invocation returns a cache hit. Use `--overwrite` after changing the sample rate or the source data.
+```bash
+shiftforge train \
+  --config configs/experiment.json \
+  --processed-root data/processed \
+  --output artifacts/training \
+  --max-train-rows 200000
+```
+
+The training command fits an unconditional median predictor, ridge regression and histogram-based gradient boosting. It selects a model using only July and August validation MAE. September is reserved for interval calibration and October through December for final test evaluation. Fixed hyperparameters are used in this milestone, so the current results are an algorithm comparison rather than an optimized benchmark.
+
+Artifacts: `artifacts/training/validation_metrics.json` and `artifacts/training/selected_model.joblib`. The data and model files are excluded from Git. Do not load serialized models from untrusted sources.
 
 ## Technical documentation
 
-- [`docs/methodology.md`](docs/methodology.md): temporal evaluation and target-leakage constraints
-- [`docs/ingestion.md`](docs/ingestion.md): schema, sampling, provenance and validity policy
-- [`configs/experiment.json`](configs/experiment.json): versioned experiment configuration
+- [`docs/methodology.md`](docs/methodology.md): experimental partitions and leakage restrictions
+- [`docs/ingestion.md`](docs/ingestion.md): reproducible data ingestion and provenance
+- [`docs/modeling.md`](docs/modeling.md): estimator design, evaluation metrics and model selection
+- [`configs/experiment.json`](configs/experiment.json): data and temporal experiment specification
 
-All input data and generated artifacts stay outside version control. The source is public and the project does not require external services or credentials.
+All project inputs are publicly available or synthetically generated. The implementation requires no proprietary infrastructure or internal datasets.
