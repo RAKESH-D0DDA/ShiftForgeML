@@ -1,4 +1,4 @@
-name: Contract tests
+name: Contract and ingestion tests
 
 on:
   push:
@@ -12,5 +12,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Execute contract tests
-        run: PYTHONPATH=src python3 -m unittest discover -s tests/unit -v
+          cache: pip
+      - name: Install package and development dependencies
+        run: python -m pip install -e '.[dev]'
+      - name: Run unit and synthetic integration tests
+        run: python -m pytest -q
